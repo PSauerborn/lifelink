@@ -7,8 +7,8 @@ import (
     "net/url"
     "net/http/httputil"
 
-	"github.com/gin-gonic/gin"
-	log "github.com/sirupsen/logrus"
+    "github.com/gin-gonic/gin"
+    log "github.com/sirupsen/logrus"
 )
 
 var persistence *GraphPersistence
@@ -16,50 +16,50 @@ var persistence *GraphPersistence
 // function used to set new instance of graph persistence 
 // for global variables to use
 func SetGraphPersistence(host string, port int, 
-	username, password string) *GraphPersistence {
-	// generate new graph persistence and set globally
-	db, err := NewGraphPersistence(fmt.Sprintf("neo4j://%s", host),
-		port, username, password)
-	persistence = db
-	if err != nil {
-		panic(fmt.Errorf("unable to generate graph persistence: %+v", err))
-	}
-	return persistence
+    username, password string) *GraphPersistence {
+    // generate new graph persistence and set globally
+    db, err := NewGraphPersistence(fmt.Sprintf("neo4j://%s", host),
+        port, username, password)
+    persistence = db
+    if err != nil {
+        panic(fmt.Errorf("unable to generate graph persistence: %+v", err))
+    }
+    return persistence
 }
 
 // function used to generate new API gateway service
 func NewAPIGateway(jwtSecret string) *gin.Engine {
-	router := gin.Default()
-	// add JWT middleware to parse access tokens
-	router.Use(JWTMiddleware(jwtSecret, false))
-	router.Any("/api/:application/*proxyPath", proxyHandler)
-	return router
+    router := gin.Default()
+    // add JWT middleware to parse access tokens
+    router.Use(JWTMiddleware(jwtSecret, false))
+    router.Any("/api/:application/*proxyPath", proxyHandler)
+    return router
 }
 
 // API handler used to proxy request to downstream microservices
 func proxyHandler(ctx *gin.Context) {
-	uid := ctx.MustGet("uid").(string)
-	log.Debug(fmt.Sprintf("proxying request for user %s", uid))
-	// inject user ID into downstream headers
+    uid := ctx.MustGet("uid").(string)
+    log.Debug(fmt.Sprintf("proxying request for user %s", uid))
+    // inject user ID into downstream headers
     ctx.Request.Header.Set("X-Authenticated-Userid", uid)
-	// get module from graph persistence and handle errors
-	module, err := persistence.GetModuleDetails(ctx.Param("application"))
-	if err != nil {
-		switch err {
-		case ErrInvalidModule:
-			log.Error(fmt.Sprintf("unable to retrieve module details: invalid module %s", 
-				ctx.Param("application")))
-			ctx.AbortWithStatusJSON(http.StatusBadGateway, gin.H{
-				"http_code": http.StatusBadGateway, "success": false,
-				"message": "Bad Gateway"})
-		default:
-			log.Error(fmt.Errorf("unable to retrieve module details: %+v", err))
-			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-				"http_code": http.StatusInternalServerError, "success": false,
-				"message": "Internal server error"})
-		}
-		return
-	}
+    // get module from graph persistence and handle errors
+    module, err := persistence.GetModuleDetails(ctx.Param("application"))
+    if err != nil {
+        switch err {
+        case ErrInvalidModule:
+            log.Error(fmt.Sprintf("unable to retrieve module details: invalid module %s", 
+                ctx.Param("application")))
+            ctx.AbortWithStatusJSON(http.StatusBadGateway, gin.H{
+                "http_code": http.StatusBadGateway, "success": false,
+                "message": "Bad Gateway"})
+        default:
+            log.Error(fmt.Errorf("unable to retrieve module details: %+v", err))
+            ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+                "http_code": http.StatusInternalServerError, "success": false,
+                "message": "Internal server error"})
+        }
+        return
+    }
     // proxy request to relevant microservices
     proxyRequest(module, ctx.Writer, ctx.Request)
 }
@@ -78,14 +78,14 @@ func proxyRequest(app Module, response http.ResponseWriter, request *http.Reques
     // trim app name from URL if specified in app config
     if app.TrimAppName {
         log.Debug(fmt.Sprintf("trimming app name from redirect for application %s", 
-			app.ModuleName))
+            app.ModuleName))
         replace := fmt.Sprintf("/%s", app.ModuleName)
         redirectUrl = strings.Replace(app.ModuleRedirect, replace, "", -1)
     } else {
         redirectUrl = app.ModuleRedirect
     }
 
-	log.Info(fmt.Sprintf("proxying request to %s", redirectUrl))
+    log.Info(fmt.Sprintf("proxying request to %s", redirectUrl))
     // construct new URL, set proxy headers and proxy
     redirect, _ := url.Parse(redirectUrl)
     SetProxyHeaders(request, redirect)

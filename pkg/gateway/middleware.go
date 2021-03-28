@@ -26,16 +26,16 @@ func JWTMiddleware(jwtSecret string, adminOnly bool) gin.HandlerFunc {
         if err != nil {
             log.Error(fmt.Errorf("unable to authenticate user: %v", err))
             ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"http_code": http.StatusUnauthorized, "success": false, 
-				"message": "Unauthorized"})
+                "http_code": http.StatusUnauthorized, "success": false, 
+                "message": "Unauthorized"})
             return
         }
         // enforce admin-only uses on admin restricted routes
         if adminOnly && !claims.Admin {
             log.Error(fmt.Errorf("unable to authenticate user: %v", err))
             ctx.AbortWithStatusJSON(http.StatusForbidden, gin.H{
-				"http_code": http.StatusForbidden, "success": false,
-				"message": "Forbidden"})
+                "http_code": http.StatusForbidden, "success": false,
+                "message": "Forbidden"})
             return
         }
 
