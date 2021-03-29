@@ -3,7 +3,7 @@ package main
 import (
     "fmt"
     "strconv"
-    
+
     "github.com/PSauerborn/lifelink/pkg/idp"
     "github.com/PSauerborn/lifelink/pkg/utils"
 )
@@ -59,14 +59,14 @@ func main() {
         panic(fmt.Errorf("invalid port %s", cfg.Get("listen_port")))
     }
 
-    // retrieve port for neo4j and parse to 
+    // retrieve port for neo4j and parse to integer
     neo4jPort, err := strconv.Atoi(cfg.Get("neo4j_port"))
     if err != nil {
         panic(fmt.Errorf("invalid port %s", cfg.Get("neo4j_port")))
     }
 
     // set new graph peristence layer and defer closing
-    persistence := idp.SetGraphPersistence(cfg.Get("neo4j_host"), 
+    persistence := idp.SetGraphPersistence(cfg.Get("neo4j_host"),
         neo4jPort, cfg.Get("neo4j_username"), cfg.Get("neo4j_password"))
     defer persistence.Driver.Close()
 

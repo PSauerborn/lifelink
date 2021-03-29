@@ -20,12 +20,12 @@ var (
     adminAPIAcccessor *api.GatewayAdminAPIAccessor
 )
 
-// function used to generate new instance of idP 
+// function used to generate new instance of idP
 // service. note that accessors for both the users
 //  and the API gateway admin console are generated
 func NewIdentityProvider(usersCfg utils.APIDependencyConfig,
     adminCfg utils.APIDependencyConfig) *gin.Engine {
-    
+
     // create API accessors for users API and for gateway
     usersAPIAcccessor = api.NewUsersApiAccessorFromConfig(usersCfg)
     adminAPIAcccessor = api.NewGatewayAdminApiAccessorFromConfig(adminCfg)
@@ -38,9 +38,9 @@ func NewIdentityProvider(usersCfg utils.APIDependencyConfig,
     return router
 }
 
-// function used to set new instance of graph persistence 
+// function used to set new instance of graph persistence
 // for global variables to use
-func SetGraphPersistence(host string, port int, 
+func SetGraphPersistence(host string, port int,
     username, password string) *GraphPersistence {
     // generate new graph persistence and set globally
     db, err := NewGraphPersistence(fmt.Sprintf("neo4j://%s", host),
@@ -76,7 +76,7 @@ func registerHandler(ctx *gin.Context) {
     }
 
     // get user details from users API to get admin status
-    success, err := usersAPIAcccessor.CreateUser("lifelink_idp", request.Uid)
+    success, err := usersAPIAcccessor.CreateUser("lifelink_idp", request)
     if err != nil || !success {
         log.Error(fmt.Errorf("unable to fetch user details: %+v", err))
         switch err {
@@ -91,7 +91,16 @@ func registerHandler(ctx *gin.Context) {
         }
         return
     }
-    ctx.JSON(http.StatusCreated, gin.H{"http_code": http.StatusCreated, 
+
+    // add node for user credentials to graph
+    if err := persistence.AddUserCredentials(request.Uid, request.Password); err != nil {
+        log.Error(fmt.Errorf("unable to add user credentials: %+v", err))
+        ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+            "http_code": http.StatusInternalServerError, "success": false,
+            "message": "Internal server error"})
+        return
+    }
+    ctx.JSON(http.StatusCreated, gin.H{"http_code": http.StatusCreated,
         "success": true, "message": "successfully created user"})
 }
 
@@ -150,6 +159,6 @@ func authenticateHandler(ctx *gin.Context) {
             "message": "Internal server error"})
         return
     }
-    ctx.JSON(http.StatusOK, gin.H{"http_code": http.StatusOK, 
+    ctx.JSON(http.StatusOK, gin.H{"http_code": http.StatusOK,
         "success": true, "token": token.Token})
 }

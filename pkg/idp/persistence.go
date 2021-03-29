@@ -11,7 +11,7 @@ import (
 )
 
 var (
-    // define custom errors 
+    // define custom errors
     ErrUserDoesNotExist = errors.New("User does not exist")
 )
 
@@ -38,14 +38,14 @@ func(db *GraphPersistence) SetUserCredentials(uid, password string) error {
     log.Debug(fmt.Sprintf("setting credentials for user %s", uid))
     session := db.NewSession()
     defer session.Close()
-    
+
     cfg := map[string]interface{}{
         "uid": uid,
         "password": hashAndSalt(password),
     }
     // generate handler function to process graph query
     handler := func(tx neo4j.Transaction) (interface{}, error) {
-        query := `MATCH (u:User {uid: $uid})-[:OWNS]->(c:Credentials) 
+        query := `MATCH (u:User {uid: $uid})-[:OWNS]->(c:Credentials)
         SET c.password = $password`
         return tx.Run(query, cfg)
     }
@@ -63,7 +63,7 @@ func(db *GraphPersistence) AddUserCredentials(uid, password string) error {
     log.Debug(fmt.Sprintf("adding credentials for user %s", uid))
     session := db.NewSession()
     defer session.Close()
-    
+
     cfg := map[string]interface{}{
         "uid": uid,
         "password": hashAndSalt(password),
@@ -72,9 +72,9 @@ func(db *GraphPersistence) AddUserCredentials(uid, password string) error {
     handler := func(tx neo4j.Transaction) (interface{}, error) {
         query := `CREATE (c:Credentials {password: $password})
         WITH c
-        MATCH 
+        MATCH
             (u:User {uid: $uid})
-        CREATE (u)-[:OWNS]->(h)` 
+        CREATE (u)-[:OWNS]->(c)`
         return tx.Run(query, cfg)
     }
     _, err := session.WriteTransaction(handler)
@@ -90,14 +90,14 @@ func(db *GraphPersistence) GetUserCredentials(uid string) (string, error) {
     log.Debug(fmt.Sprintf("fetching credentials for user %s", uid))
     session := db.NewSession()
     defer session.Close()
-    
+
     cfg := map[string]interface{}{
         "uid": uid,
     }
     // generate handler function to process graph query
     handler := func(tx neo4j.Transaction) (interface{}, error) {
-        query := `MATCH (u:User {uid: $uid}-[:OWNS]->(c:Credentials)
-        RETURN c.password` 
+        query := `MATCH (u:User {uid: $uid})-[:OWNS]->(c:Credentials)
+        RETURN c.password`
         result, err := tx.Run(query, cfg)
         if err != nil {
             log.Error(fmt.Errorf("unable to retrieve user credentials: %+v", err))

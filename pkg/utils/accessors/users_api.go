@@ -54,7 +54,7 @@ type UserDetailsResponse struct {
 func(accessor *UsersAPIAccessor) GetUserDetails(uid, targetUser string) (UserDetailsResponse, error) {
     log.Debug(fmt.Sprintf("retrieving user details for %s", targetUser))
     var response UserDetailsResponse
-    url := accessor.FormatURL(fmt.Sprintf("/users/details/%s", targetUser))
+    url := accessor.FormatURL(fmt.Sprintf("users/details/%s", targetUser))
 
     headers := map[string]string{"X-Authenticated-Userid": uid}
     req, err := accessor.NewJSONRequest("GET", url, nil, headers)
@@ -84,8 +84,8 @@ func(accessor *UsersAPIAccessor) GetUserDetails(uid, targetUser string) (UserDet
     default:
         // parse response body and log
         responseBody, _ := ioutil.ReadAll(resp.Body)
-        log.Error(fmt.Errorf("received invalid response from API with status code %d: %+v", 
-            resp.StatusCode, responseBody))
+        log.Error(fmt.Errorf("received invalid response from API with status code %d: %+v",
+            resp.StatusCode, string(responseBody)))
         return response, utils.ErrInvalidAPIResponse
     }
 }
@@ -94,12 +94,12 @@ func(accessor *UsersAPIAccessor) GetUserDetails(uid, targetUser string) (UserDet
 // given user
 func(accessor *UsersAPIAccessor) CreateUser(uid string, user interface{}) (bool, error) {
     log.Debug("creating new user")
-    url := accessor.FormatURL("/users/new")
+    url := accessor.FormatURL("users/new")
 
     // convert request body to JSON
     body, err := json.Marshal(user)
     if err != nil {
-        log.Error(fmt.Errorf("unable to serialise data to JSON: %+v", err))
+        log.Error(fmt.Errorf("unable to serialize data to JSON: %+v", err))
         return false, err
     }
     // generate request headers and request instance
@@ -118,7 +118,7 @@ func(accessor *UsersAPIAccessor) CreateUser(uid string, user interface{}) (bool,
     defer resp.Body.Close()
 
     switch resp.StatusCode {
-    case 200:
+    case 201:
         return true, nil
     case 400:
         log.Error(fmt.Errorf("cannot create user: invalid request body"))
@@ -132,8 +132,8 @@ func(accessor *UsersAPIAccessor) CreateUser(uid string, user interface{}) (bool,
     default:
         // parse response body and log
         responseBody, _ := ioutil.ReadAll(resp.Body)
-        log.Error(fmt.Errorf("received invalid response from API with status code %d: %+v", 
-            resp.StatusCode, responseBody))
+        log.Error(fmt.Errorf("received invalid response from API with status code %d: %+v",
+            resp.StatusCode, string(responseBody)))
         return false, utils.ErrInvalidAPIResponse
     }
 }

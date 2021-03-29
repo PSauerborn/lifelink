@@ -46,7 +46,7 @@ type TokenResponse struct {
 func(accessor *GatewayAdminAPIAccessor) GetAccessToken(uid string, admin bool) (TokenResponse, error) {
     log.Debug("creating new user")
     var response TokenResponse
-    url := accessor.FormatURL("/admin/token")
+    url := accessor.FormatURL("admin/token")
 
     // convert request body to JSON
     body, err := json.Marshal(map[string]interface{}{"uid": uid, "admin": admin})
@@ -80,7 +80,7 @@ func(accessor *GatewayAdminAPIAccessor) GetAccessToken(uid string, admin bool) (
     default:
         // parse response body and log
         responseBody, _ := ioutil.ReadAll(resp.Body)
-        log.Error(fmt.Errorf("received invalid response from API with status code %d: %+v", 
+        log.Error(fmt.Errorf("received invalid response from API with status code %d: %+v",
             resp.StatusCode, responseBody))
         return response, utils.ErrInvalidAPIResponse
     }

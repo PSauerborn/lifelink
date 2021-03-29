@@ -24,9 +24,9 @@ func NewUsersAPI() *gin.Engine {
     return router
 }
 
-// function used to set new instance of graph persistence 
+// function used to set new instance of graph persistence
 // for global variables to use
-func SetGraphPersistence(host string, port int, 
+func SetGraphPersistence(host string, port int,
     username, password string) *GraphPersistence {
     // generate new graph persistence and set globally
     db, err := NewGraphPersistence(fmt.Sprintf("neo4j://%s", host),
@@ -118,7 +118,7 @@ func createUserHandler(ctx *gin.Context) {
             "message": "Username already exists"})
         return
     }
-    
+
     // add new user to persistence graph
     if err := persistence.AddUser(request); err != nil {
         ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{

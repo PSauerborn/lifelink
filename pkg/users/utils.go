@@ -4,7 +4,7 @@ import (
 
 )
 
-// function used to determine if a given user has 
+// function used to determine if a given user has
 // admin access
 func isAdminUser(user string) (bool, error) {
     // get user details from graph

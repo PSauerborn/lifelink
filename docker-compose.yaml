@@ -2,20 +2,22 @@ version: '3.7'
 services:
 
   idp:
-    build: 
+    build:
       context: ./
       dockerfile: cmd/idp/Dockerfile
     restart: unless-stopped
     container_name: lifelink-idp
     ports:
-    - "10876:10876"
+    - "10867:10867"
     networks:
     - lifelink
     environment:
-      NEO4J_HOST: neo4j 
+      NEO4J_HOST: neo4j
+      ADMIN_API_HOST: lifelink-gateway
+      USERS_API_HOST: lifelink-users-api
 
   gateway:
-    build: 
+    build:
       context: ./
       dockerfile: cmd/gateway/Dockerfile
     restart: unless-stopped
@@ -25,10 +27,10 @@ services:
     networks:
     - lifelink
     environment:
-      NEO4J_HOST: neo4j 
+      NEO4J_HOST: neo4j
 
   users-api:
-    build: 
+    build:
       context: ./
       dockerfile: cmd/users/Dockerfile
     restart: unless-stopped
@@ -36,9 +38,18 @@ services:
     networks:
     - lifelink
     environment:
-      NEO4J_HOST: neo4j 
-      ADMIN_API_HOST: lifelink-gateway
-      USERS_API_HOST: lifelink-users-api
+      NEO4J_HOST: neo4j
+
+  habits-api:
+    build:
+      context: ./
+      dockerfile: cmd/habits/Dockerfile
+    restart: unless-stopped
+    container_name: lifelink-habits-api
+    networks:
+    - lifelink
+    environment:
+      NEO4J_HOST: neo4j
 
 networks:
   lifelink:

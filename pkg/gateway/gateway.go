@@ -13,9 +13,9 @@ import (
 
 var persistence *GraphPersistence
 
-// function used to set new instance of graph persistence 
+// function used to set new instance of graph persistence
 // for global variables to use
-func SetGraphPersistence(host string, port int, 
+func SetGraphPersistence(host string, port int,
     username, password string) *GraphPersistence {
     // generate new graph persistence and set globally
     db, err := NewGraphPersistence(fmt.Sprintf("neo4j://%s", host),
@@ -47,7 +47,7 @@ func proxyHandler(ctx *gin.Context) {
     if err != nil {
         switch err {
         case ErrInvalidModule:
-            log.Error(fmt.Sprintf("unable to retrieve module details: invalid module %s", 
+            log.Error(fmt.Sprintf("unable to retrieve module details: invalid module %s",
                 ctx.Param("application")))
             ctx.AbortWithStatusJSON(http.StatusBadGateway, gin.H{
                 "http_code": http.StatusBadGateway, "success": false,
@@ -77,7 +77,7 @@ func proxyRequest(app Module, response http.ResponseWriter, request *http.Reques
     var redirectUrl string
     // trim app name from URL if specified in app config
     if app.TrimAppName {
-        log.Debug(fmt.Sprintf("trimming app name from redirect for application %s", 
+        log.Debug(fmt.Sprintf("trimming app name from redirect for application %s",
             app.ModuleName))
         replace := fmt.Sprintf("/%s", app.ModuleName)
         redirectUrl = strings.Replace(app.ModuleRedirect, replace, "", -1)
@@ -85,6 +85,8 @@ func proxyRequest(app Module, response http.ResponseWriter, request *http.Reques
         redirectUrl = app.ModuleRedirect
     }
 
+    // remove /api segment from request path
+    request.URL.Path = strings.Replace(request.URL.Path, "/api", "", -1)
     log.Info(fmt.Sprintf("proxying request to %s", redirectUrl))
     // construct new URL, set proxy headers and proxy
     redirect, _ := url.Parse(redirectUrl)
