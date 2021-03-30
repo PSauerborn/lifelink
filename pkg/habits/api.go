@@ -47,7 +47,7 @@ func SetGraphPersistence(host string, port int,
 // handler used to serve health check routes
 func healthCheckHandler(ctx *gin.Context) {
     log.Info(fmt.Sprintf("received request for health check handler"))
-    ctx.JSON(http.StatusCreated, gin.H{"http_code": http.StatusCreated,
+    ctx.JSON(http.StatusOK, gin.H{"http_code": http.StatusOK,
         "success": true, "message": "Running"})
 }
 

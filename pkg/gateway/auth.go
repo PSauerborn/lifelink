@@ -30,6 +30,10 @@ func parseJWToken(tokenString, secret string) (*JWTClaims, error) {
     token, err := jwt.ParseWithClaims(tokenString, &JWTClaims{}, func(token *jwt.Token) (interface{}, error) {
         return []byte(secret), nil
     })
+    if err != nil {
+        log.Error(fmt.Errorf("unable to parse token: %+v", err))
+        return nil, ErrInvalidJWToken
+    }
     // parse token into custom claims object
     if customClaims, ok := token.Claims.(*JWTClaims); ok && token.Valid {
         return customClaims, nil

@@ -8,7 +8,7 @@ import (
 )
 
 var (
-    validCycles = []string{"mon", "tue", "wed", "thur", "fri", "sat", "sun"}
+    validCycles = []string{"mon", "tue", "wed", "thu", "fri", "sat", "sun"}
 )
 
 // helper function used to determine is a string

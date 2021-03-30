@@ -5,6 +5,7 @@ import (
     "net/http"
 
     "github.com/gin-gonic/gin"
+    "github.com/gin-contrib/cors"
     log "github.com/sirupsen/logrus"
 
     "github.com/PSauerborn/lifelink/pkg/utils"
@@ -16,8 +17,8 @@ var (
     persistence *GraphPersistence
 
     // define global accessors for microservice mesh
-    usersAPIAcccessor *api.UsersAPIAccessor
-    adminAPIAcccessor *api.GatewayAdminAPIAccessor
+    usersAPIAccessor *api.UsersAPIAccessor
+    adminAPIAccessor *api.GatewayAdminAPIAccessor
 )
 
 // function used to generate new instance of idP
@@ -27,10 +28,17 @@ func NewIdentityProvider(usersCfg utils.APIDependencyConfig,
     adminCfg utils.APIDependencyConfig) *gin.Engine {
 
     // create API accessors for users API and for gateway
-    usersAPIAcccessor = api.NewUsersApiAccessorFromConfig(usersCfg)
-    adminAPIAcccessor = api.NewGatewayAdminApiAccessorFromConfig(adminCfg)
+    usersAPIAccessor = api.NewUsersApiAccessorFromConfig(usersCfg)
+    adminAPIAccessor = api.NewGatewayAdminApiAccessorFromConfig(adminCfg)
 
     router := gin.Default()
+    router.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"*"},
+		AllowMethods:     []string{"GET", "POST", "OPTIONS"},
+		AllowHeaders:     []string{"*"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+	}))
 
     router.GET("/authenticate/health_check", healthCheckHandler)
     router.POST("/authenticate/register", registerHandler)
@@ -55,7 +63,7 @@ func SetGraphPersistence(host string, port int,
 // API handler used to serve health check routes
 func healthCheckHandler(ctx *gin.Context) {
     log.Info(fmt.Sprintf("received request for health check handler"))
-    ctx.JSON(http.StatusCreated, gin.H{"http_code": http.StatusCreated,
+    ctx.JSON(http.StatusOK, gin.H{"http_code": http.StatusOK,
         "success": true, "message": "Running"})
 }
 
@@ -76,7 +84,7 @@ func registerHandler(ctx *gin.Context) {
     }
 
     // get user details from users API to get admin status
-    success, err := usersAPIAcccessor.CreateUser("lifelink_idp", request)
+    success, err := usersAPIAccessor.CreateUser("lifelink_idp", request)
     if err != nil || !success {
         log.Error(fmt.Errorf("unable to fetch user details: %+v", err))
         switch err {
@@ -143,7 +151,7 @@ func authenticateHandler(ctx *gin.Context) {
     }
 
     // get user details from users API to get admin status
-    details, err := usersAPIAcccessor.GetUserDetails("lifelink_idp", request.Uid)
+    details, err := usersAPIAccessor.GetUserDetails("lifelink_idp", request.Uid)
     if err != nil {
         log.Error(fmt.Errorf("unable to fetch user details: %+v", err))
         ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
@@ -152,7 +160,7 @@ func authenticateHandler(ctx *gin.Context) {
         return
     }
     // get token from API gateway
-    token, err := adminAPIAcccessor.GetAccessToken(request.Uid, details.User.Admin)
+    token, err := adminAPIAccessor.GetAccessToken(request.Uid, details.User.Admin)
     if err != nil {
         ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
             "http_code": http.StatusInternalServerError, "success": false,

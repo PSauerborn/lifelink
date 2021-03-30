@@ -18,7 +18,7 @@ var (
 // function used to generate new API gateway admin service
 func NewGatewayAdminAPI(secret string, tokenExpiry int) *gin.Engine {
     // set variables to be used globally
-    jwtSecret, tokenExpiryMinutes = secret, tokenExpiry 
+    jwtSecret, tokenExpiryMinutes = secret, tokenExpiry
 
     router := gin.Default()
     router.GET("/admin/health_check", healthCheckHandler)
@@ -43,7 +43,7 @@ func generateJWToken(uid string, admin bool) (string, error) {
 // handler used to serve health check routes
 func healthCheckHandler(ctx *gin.Context) {
     log.Info("received request for health check handler")
-    ctx.JSON(http.StatusCreated, gin.H{"http_code": http.StatusCreated,
+    ctx.JSON(http.StatusOK, gin.H{"http_code": http.StatusOK,
         "success": true, "message": "Running"})
 }
 
@@ -67,10 +67,10 @@ func getTokenHandler(ctx *gin.Context) {
     token, err := generateJWToken(request.Uid, *request.Admin)
     if err != nil {
         log.Error(fmt.Errorf("unable to generate JWToken: %+v", err))
-        ctx.JSON(http.StatusInternalServerError, gin.H{"http_code": http.StatusInternalServerError, 
+        ctx.JSON(http.StatusInternalServerError, gin.H{"http_code": http.StatusInternalServerError,
             "success": false, "message": "Internal server error"})
         return
     }
-    ctx.JSON(http.StatusOK, gin.H{"http_code": http.StatusOK, 
+    ctx.JSON(http.StatusOK, gin.H{"http_code": http.StatusOK,
         "success": true, "token": token})
 }
