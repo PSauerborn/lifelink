@@ -19,7 +19,9 @@
                                     ref="habitNameTextField"
                                     label="Habit Name"
                                     autocomplete="off"
-                                    :rules="rules.habit_name" dense />
+                                    :rules="rules.habit_name"
+                                    maxlength="20"
+                                    counter dense />
                         <v-text-field v-model="habitDescription"
                                     ref="habitDescriptionTextField"
                                     label="Habit Description"
@@ -86,7 +88,7 @@ export default {
         // with the habit name, description and cycle
         createHabit() {
             // return if habit name or description have not been set
-            if (!this.habitName || !this.habitDescription) {
+            if (!this.habitName || !this.habitDescription || this.habitName.length > 20) {
                 return
             }
             let vm = this
@@ -126,7 +128,7 @@ export default {
         habitName: '',
         habitDescription: '',
         rules: {
-            habit_name: [val => (val || '').length > 0 || 'This field is required'],
+            habit_name: [val => (val || '').length > 0 || 'This field is required', v => v.length <= 20 || 'Max 20 characters'],
             habit_description: [val => (val || '').length > 0 || 'This field is required']
         }
     })

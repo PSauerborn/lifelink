@@ -162,7 +162,7 @@ func completeHabitHandler(ctx *gin.Context) {
 
     // retrieve user ID from context
     uid := ctx.MustGet("uid").(string)
-    if err := completeUserHabit(uid, habitId); err != nil {
+    if err := completeHabit(uid, habitId); err != nil {
         log.Error(fmt.Errorf("unable to complete user habit: %+v", err))
         ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
             "http_code": http.StatusInternalServerError, "success": false,

@@ -1,5 +1,5 @@
 <template>
-    <v-container fluid>
+    <v-container class="habits-app-container" fluid>
         <v-row align="center" justify="center" dense>
             <v-col align="center" justify="center" cols=12>
                 <v-row style="margin-right: 50px" align="end" justify="end" dense>
@@ -14,10 +14,16 @@
                         </v-dialog>
                     </v-col>
                 </v-row>
-                <v-row>
-                    <v-col align="center" justify="center" cols=4
-                           v-for="habit in habits" :key="habit.habit_id">
-                        <habit-card @reloadHabits="getHabits" @logout="$emit('logout')" :habit="habit"/>
+                <v-row align="start" justify="start" dense>
+                    <v-col align="start" justify="start"
+                           v-for="habit in habits"
+                           :key="habit.habit_id"
+                           lg="4"
+                           xl="3"
+                           md="6">
+                        <habit-card @reloadHabits="getHabits"
+                                    @logout="$emit('logout')"
+                                    :habit="habit" />
                     </v-col>
                 </v-row>
             </v-col>
@@ -33,8 +39,11 @@ import NewHabitModal from './NewHabitModal.vue'
 export default {
   components: { HabitCard, NewHabitModal },
     name: "HabitsApp",
+    computed: {
+    },
     methods: {
         getHabits() {
+            console.log(this.$vuetify.breakpoint.name)
             let vm = this
             axios({
                 method: 'get',
@@ -63,4 +72,9 @@ export default {
 
 <style scoped>
 
+@import url('https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@300;400&display=swap');
+
+.habits-app-container {
+    font-family: "Source Sans Pro"
+}
 </style>

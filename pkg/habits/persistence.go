@@ -47,6 +47,12 @@ type Habit struct {
     LastCompleted    *time.Time `json:"last_completed"`
 }
 
+type HabitCompletion struct {
+    OnTarget       bool      `json:"on_target"`
+    Streak         bool      `json:"streak"`
+    EventTimestamp time.Time `json:"event_timestamp"`
+}
+
 // function used to retrieve all habits for given user
 func(db *GraphPersistence) GetUserHabits(user string) ([]Habit, error) {
     log.Debug(fmt.Sprintf("retrieving all habits for user %s...", user))
@@ -106,7 +112,6 @@ func(db *GraphPersistence) GetHabitByHabitId(user string, habitId uuid.UUID) (Ha
         "uid": user,
         "habit_id": habitId.String(),
     }
-
     // define handler function used to retrieve node data
     handler := func(tx neo4j.Transaction) (interface{}, error) {
         query := `MATCH (:User {uid: $uid})-[:OWNS]->(h:Habit {habit_id: $habit_id})
@@ -294,4 +299,37 @@ func(db *GraphPersistence) UpdateUserHabit(user string, habitId uuid.UUID,
         return err
     }
     return nil
+}
+
+func(db *GraphPersistence) GetHabitCompletions(user string, habitId uuid.UUID) ([]HabitCompletion, error) {
+    log.Debug(fmt.Sprintf("fetching habit completions for habit %s...", habitId))
+    completions := []HabitCompletion{}
+    // create new persistence session for graph and defer closing
+    session := db.NewSession()
+    defer session.Close()
+    // generate config metadata for query
+    cfg := map[string]interface{}{
+        "uid": user,
+        "habit_id": habitId.String(),
+    }
+    // define handler function used to retrieve node data
+    handler := func(tx neo4j.Transaction) (interface{}, error) {
+        query := `MATCH (:User {uid: $uid})-[:OWNS]->(h:Habit {habit_id: $habit_id})-[:OWNS]->(c.HabitCompletion)
+        RETURN c.event_timestamp, c.streak, c.on_target ORDER BY c.event_timestamp DESC`
+        return neo4j.Collect(tx.Run(query, cfg))
+    }
+    // iterate over
+    nodes, err := neo4j.AsRecords(session.ReadTransaction(handler))
+    if err != nil {
+        log.Error(fmt.Errorf("unable to retrieve habit completions: %+v", err))
+        return completions, nil
+    }
+    for _, node := range(nodes) {
+        completions = append(completions, HabitCompletion{
+            EventTimestamp: node.Values[0].(time.Time),
+            Streak: node.Values[1].(bool),
+            OnTarget: node.Values[2].(bool),
+        })
+    }
+    return completions, nil
 }
