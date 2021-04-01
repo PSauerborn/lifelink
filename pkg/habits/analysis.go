@@ -4,9 +4,15 @@ import (
     "fmt"
     "time"
     "strings"
+    "errors"
 
     "github.com/google/uuid"
     log "github.com/sirupsen/logrus"
+)
+
+var (
+    // define custom errors
+    ErrInvalidHabitStatus = errors.New("Habit has invalid status")
 )
 
 // define mappings for cycles to convert
@@ -43,8 +49,8 @@ func getHabitDueDate(habit Habit) time.Time {
         ts = time.Date(year, month, day + 1, 0, 0, 0, 0, time.UTC)
     } else {
         // get ts for midnight of current day
-        year, month, day := time.Now().Date()
-        ts = time.Date(year, month, day + 1, 0, 0, 0, 0, time.UTC)
+        year, month, day := habit.Created.Date()
+        ts = time.Date(year, month, day, 0, 0, 0, 0, time.UTC)
     }
     // convert habit cycle to array and find last due date
     cycle := strings.Split(habit.HabitCycle, ",")
@@ -83,6 +89,18 @@ func habitOverdue(habit Habit) bool {
     return time.Now().UTC().After(dueDate)
 }
 
+// function used to retrieve habit status. habit status
+// is returned as either due, overdue or on target
+func getHabitStatus(habit Habit) string {
+    if habitOverdue(habit) {
+        return "overdue"
+    } else if habitDueToday(habit) {
+        return "due"
+    } else {
+        return "on-target"
+    }
+}
+
 // function used to complete user habits. habits are evaluated
 // as on-target and as streak contributers on each completion
 func completeHabit(uid string, habitId uuid.UUID) error {
@@ -94,24 +112,17 @@ func completeHabit(uid string, habitId uuid.UUID) error {
     }
 
     log.Debug(fmt.Sprintf("habit due date evaluated as %s", getHabitDueDate(habit)))
-    if habitDueToday(habit) {
-        log.Debug("habit due today. checking for streak")
-        // if habit is due today and not overdue, add as streak
-        if !habitOverdue(habit) {
-            log.Debug("habit on target. adding with streak")
-            return persistence.CompleteUserHabit(uid, habitId, true, true)
-        // else add without streak
-        } else {
-            log.Debug("streak broken for habit. adding without streak")
-            return persistence.CompleteUserHabit(uid, habitId, false, true)
-        }
-    // if habit is overdue, add without streak
-    } else if habitOverdue(habit) {
+    switch getHabitStatus(habit) {
+    case "due":
+        log.Debug("habit on target. adding with streak")
+        return persistence.CompleteUserHabit(uid, habitId, true, habit.Streak + 1)
+    case "overdue":
         log.Debug("habit overdue. adding without streak")
-        return persistence.CompleteUserHabit(uid, habitId, false, true)
-    // if habit is not due today and not overdue, add without streak
-    } else {
+        return persistence.CompleteUserHabit(uid, habitId, false, 0)
+    case "on-target":
         log.Debug("habit already on target. adding without streak")
-        return persistence.CompleteUserHabit(uid, habitId, true, false)
+        return persistence.CompleteUserHabit(uid, habitId, true, habit.Streak)
+    default:
+        return ErrInvalidHabitStatus
     }
 }

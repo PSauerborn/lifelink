@@ -45,6 +45,9 @@ type Habit struct {
     HabitDescription string     `json:"habit_description" binding:"required"`
     HabitCycle       string     `json:"habit_cycle" binding:"required"`
     LastCompleted    *time.Time `json:"last_completed"`
+    Status           string     `json:"status"`
+    Streak           int64      `json:"streak"`
+    Completions      int64      `json:"completions"`
 }
 
 type HabitCompletion struct {
@@ -58,7 +61,7 @@ func(db *GraphPersistence) GetUserHabits(user string) ([]Habit, error) {
     log.Debug(fmt.Sprintf("retrieving all habits for user %s...", user))
     habits := []Habit{}
 
-    // create new persitence session for graph and defer closing
+    // create new persistence session for graph and defer closing
     session := db.NewSession()
     defer session.Close()
     // generate config metadata for query
@@ -67,8 +70,9 @@ func(db *GraphPersistence) GetUserHabits(user string) ([]Habit, error) {
     }
     handler := func(tx neo4j.Transaction) (interface{}, error) {
         query := `MATCH (:User {uid: $uid})-[:OWNS]->(h:Habit)
+        OPTIONAL MATCH (h)-[:OWNS]->(c:HabitCompletion)
         RETURN h.habit_name, h.habit_id, h.habit_description,
-        h.habit_cycle, h.created, h.last_completed`
+        h.habit_cycle, h.created, h.last_completed, h.streak, COUNT(c)`
         return neo4j.Collect(tx.Run(query, cfg))
     }
     // get all habits from graph using persistence session
@@ -88,6 +92,8 @@ func(db *GraphPersistence) GetUserHabits(user string) ([]Habit, error) {
             HabitDescription: node.Values[2].(string),
             HabitCycle: node.Values[3].(string),
             Created: node.Values[4].(time.Time),
+            Streak: node.Values[6].(int64),
+            Completions: node.Values[7].(int64),
         }
         // add last completed date if set else leave as null
         if lastCompleted != nil {
@@ -96,6 +102,9 @@ func(db *GraphPersistence) GetUserHabits(user string) ([]Habit, error) {
         } else {
             habit.LastCompleted = nil
         }
+        // get habit status based on last completion date
+        // and cycle and add to habit struct before appending
+        habit.Status = getHabitStatus(habit)
         habits = append(habits, habit)
     }
     return habits, nil
@@ -116,7 +125,7 @@ func(db *GraphPersistence) GetHabitByHabitId(user string, habitId uuid.UUID) (Ha
     handler := func(tx neo4j.Transaction) (interface{}, error) {
         query := `MATCH (:User {uid: $uid})-[:OWNS]->(h:Habit {habit_id: $habit_id})
         RETURN h.habit_name, h.habit_id, h.habit_description,
-        h.habit_cycle, h.created, h.last_completed`
+        h.habit_cycle, h.created, h.last_completed, h.streak`
         results, err := tx.Run(query, cfg)
         if err != nil {
             log.Error(fmt.Errorf("unable to retrieve data from graph: %+v", err))
@@ -143,6 +152,7 @@ func(db *GraphPersistence) GetHabitByHabitId(user string, habitId uuid.UUID) (Ha
         HabitDescription: node.Values[2].(string),
         HabitCycle: node.Values[3].(string),
         Created: node.Values[4].(time.Time),
+        Streak: node.Values[6].(int64),
     }
     // parse last completed pointer if not nill
     lastCompleted := node.Values[5]
@@ -178,7 +188,8 @@ func(db *GraphPersistence) CreateUserHabit(user string, habit Habit) error {
             habit_description: $habit_description,
             habit_cycle: $habit_cycle,
             last_completed: null,
-            created: $created
+            created: $created,
+            streak: 0
         })
         WITH h
         MATCH
@@ -197,9 +208,9 @@ func(db *GraphPersistence) CreateUserHabit(user string, habit Habit) error {
 
 // function used to complete a habit with given habit ID for user
 func(db *GraphPersistence) CompleteUserHabit(user string, habitId uuid.UUID,
-    onTarget bool, streak bool) error {
+    onTarget bool, streak int64) error {
     log.Debug(fmt.Sprintf("completing habit %s for user %s...", habitId, user))
-    // create new persitence session for graph and defer closing
+    // create new persistence session for graph and defer closing
     session := db.NewSession()
     defer session.Close()
     // generate config metadata for query
@@ -213,7 +224,7 @@ func(db *GraphPersistence) CompleteUserHabit(user string, habitId uuid.UUID,
         var (query string; err error)
         // set completion date on habit as property
         query = `MATCH (u:User {uid: $uid})-[:OWNS]->(h:Habit {habit_id: $habit_id})
-        SET h.last_completed = datetime()`
+        SET h.last_completed = datetime(), h.streak = $streak`
         _, err = tx.Run(query, cfg)
         if err != nil {
             log.Error(fmt.Errorf("unable to update habit with last completion: %+v", err))

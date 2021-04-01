@@ -7,7 +7,8 @@
                         <v-card-text>
                             <v-row style="margin-bottom: 10px" :no-gutters="true" dense>
                                 <v-col cols=8>
-                                    <v-card-title>{{ habit.habit_name }}</v-card-title>
+                                    <v-card-title style="text-transform: capitalize">{{ habit.habit_name }}</v-card-title>
+                                    <v-card-subtitle>Last Completed: <span style="font-weight: bold">{{ lastCompleted }}</span></v-card-subtitle>
                                 </v-col>
                                 <v-divider vertical />
                                 <v-col align="end" justify="end" cols=4>
@@ -60,8 +61,8 @@
                                     </v-col>
                                     <v-col>
                                         <v-card-text>
-                                            {{ lastCompleted }}<br>
-                                            <span style="font-size: 20px; font-weight: bold">Completed</span>
+                                            {{ habit.completions }}<br>
+                                            <span style="font-size: 20px; font-weight: bold">Completions</span>
                                         </v-card-text>
                                     </v-col>
                                     <v-col>
@@ -124,16 +125,6 @@ export default {
             const d = new Date().getDay()
             return this.selectedDays.includes(this.dayMappings[d])
         },
-        // computed property to return the border color
-        // of the habit card based on whether or not the habit
-        // is due on the present day
-        borderColor() {
-            if (this.isHabitDue) {
-                return "5px solid red"
-            } else {
-                return ""
-            }
-        },
         createdDate() {
             return moment(this.habit.created).format("YYYY-MM-DD")
         },
@@ -144,7 +135,7 @@ export default {
             return moment(this.habit.last_completed).format("YYYY-MM-DD")
         },
         streak() {
-            return 0
+            return this.habit.streak
         },
         cardWidth() {
             switch (this.$vuetify.breakpoint.name) {
@@ -152,6 +143,17 @@ export default {
                 case 'lg': return 500
                 case 'xl': return 500
                 default: return 450
+            }
+        },
+        // computed property to return the border color
+        // of the habit card based on whether or not the habit
+        // is due on the present day
+        borderColor() {
+            switch (this.habit.status) {
+                case 'due': return '5px solid #FF8300'
+                case 'overdue': return '5px solid #F45252'
+                case 'on-target': return '5px solid #C5F452'
+                default: return ''
             }
         }
     },
