@@ -2,24 +2,7 @@
     <v-container class="habits-app-container" fluid>
         <v-row align="center" justify="center" dense>
             <v-col align="center" justify="center" cols=12>
-                <v-row align="center" justify="center" dense>
-                    <v-col align="center" justify="center" cols=2>
-                            <span>{{ mostCompletedHabit.habit_name }}</span><br>
-                            <span style="font-size: 45px">{{ mostCompletedHabit.completions }}</span><br>
-                            <span style="font-size: 30px; font-weight: bold">Most Completed</span>
-                    </v-col>
-                    <v-divider vertical></v-divider>
-                    <v-col align="center" justify="center" xl=2 lg=3 md=3>
-                            <span>{{ mostStreakedHabit.habit_name }}</span><br>
-                            <span style="font-size: 45px">{{ mostStreakedHabit.streak }}</span><br>
-                            <span style="font-size: 30px; font-weight: bold">Highest Streak</span>
-                    </v-col>
-                    <v-divider vertical></v-divider>
-                    <v-col align="center" justify="center" xl=2 lg=3 md=3>
-                            <span style="font-size: 45px">{{ this.habits.length }}</span><br>
-                            <span style="font-size: 30px; font-weight: bold">Total Habits</span>
-                    </v-col>
-                </v-row>
+                <habits-stats :habits="habits" />
                 <v-row style="margin-right: 50px" align="end" justify="end" dense>
                     <v-col align="end" justify="end">
                         <v-dialog v-model="dialog" width="600">
@@ -33,12 +16,8 @@
                     </v-col>
                 </v-row>
                 <v-row align="start" justify="start" dense>
-                    <v-col align="start" justify="start"
-                           v-for="habit in habits"
-                           :key="habit.habit_id"
-                           lg="4"
-                           xl="3"
-                           md="6">
+                    <v-col align="start" justify="start" v-for="habit in habits"
+                           :key="habit.habit_id" lg="4" xl="3" md="6">
                         <habit-card @reloadHabits="getHabits"
                                     @logout="$emit('logout')"
                                     :habit="habit" />
@@ -54,36 +33,12 @@ import axios from 'axios';
 
 import HabitCard from './HabitCard.vue'
 import NewHabitModal from './NewHabitModal.vue'
+import HabitsStats from './HabitsStats.vue';
 export default {
-  components: { HabitCard, NewHabitModal },
+  components: { HabitCard, NewHabitModal, HabitsStats },
     name: "HabitsApp",
     computed: {
-        // computed property used to get most completed habit
-        mostCompletedHabit() {
-            if (this.habits.length == 0) {
-                return {habit_name: 'None', completions: 0}
-            }
-            let topHabit = this.habits[0]
-            this.habits.forEach(habit => {
-                if (habit.completions > topHabit.completions) {
-                    topHabit = habit
-                }
-            })
-            return topHabit
-        },
-        // computed property used to get most streaked habit
-        mostStreakedHabit() {
-            if (this.habits.length == 0) {
-                return {habit_name: 'None', streak: 0}
-            }
-            let topHabit = this.habits[0]
-            this.habits.forEach(habit => {
-                if (habit.streak > topHabit.streak) {
-                    topHabit = habit
-                }
-            })
-            return topHabit
-        }
+
     },
     methods: {
         getHabits() {
