@@ -1,5 +1,5 @@
 <template>
-    <v-card min-height="325px" style="overflow: hidden">
+    <v-card min-height="325px">
         <v-row align="center" justify="center" dense>
             <v-col cols=12>
                 <v-card-title>
